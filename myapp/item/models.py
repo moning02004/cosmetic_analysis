@@ -1,35 +1,39 @@
 from django.db import models
 
 
-def image_path(instance, filename):
-    return 'image/{}'.format(filename)
-
-
-def thumbnail_path(instance, filename):
-    return 'image/{}'.format(filename)
-
-
-class Product(models.Model):
-    name = models.CharField(max_length=50)
-    price = models.IntegerField()
-    gender = models.CharField(max_length=6)
-    category = models.CharField(max_length=15)
-    ingredients = models.TextField(max_length=300)
-    monthlySales = models.IntegerField()
-
-    thumbnail = models.ImageField(upload_to=thumbnail_path)
-    image = models.ImageField(upload_to=image_path)
-    image_id = models.CharField(max_length=32)
+class Category(models.Model):
+    name = models.CharField(max_length=20, primary_key=True)
 
     def __str__(self):
         return self.name
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, primary_key=True)
     oily = models.CharField(max_length=1, default="")
     dry = models.CharField(max_length=1, default="")
     sensitive = models.CharField(max_length=1, default="")
 
     def __str__(self):
         return self.name
+
+
+class Product(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    name = models.CharField(max_length=150)
+    price = models.IntegerField()
+    gender = models.CharField(max_length=6)
+    monthlySales = models.IntegerField()
+    image_id = models.CharField(max_length=50)
+    ingredient = models.ManyToManyField(Ingredient, through='Constitute', through_fields=('product', 'ingredient'))
+
+    def __str__(self):
+        return self.name
+
+
+class Constitute(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.product.name + "__" + self.ingredient.name

@@ -1,0 +1,23 @@
+[
+  {
+    "model": "item.category",
+    "fields": {
+      "name": "skincare"
+    }
+  }, {
+    "model": "item.category",
+    "fields": {
+      "name": "maskpack"
+    }
+  }, {
+    "model": "item.category",
+    "fields": {
+      "name": "suncare"
+    }
+  }, {
+    "model": "item.category",
+    "fields": {
+      "name": "basemakeup"
+    }
+  }
+]
