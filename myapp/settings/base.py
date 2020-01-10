@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'myapp.home',
     'myapp.item',
 
-    # django_rest_framework
+    # django_rest_framework and database
     'corsheaders',
     'rest_framework',
 ]
