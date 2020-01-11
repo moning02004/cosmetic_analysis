@@ -10,9 +10,9 @@ class Category(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=50, primary_key=True)
-    oily = models.CharField(max_length=1, default="")
-    dry = models.CharField(max_length=1, default="")
-    sensitive = models.CharField(max_length=1, default="")
+    oily = models.SmallIntegerField()
+    dry = models.SmallIntegerField()
+    sensitive = models.SmallIntegerField()
 
     def __str__(self):
         return self.name
