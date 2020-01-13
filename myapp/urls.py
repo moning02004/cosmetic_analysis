@@ -19,7 +19,7 @@ from django.urls import path
 from myapp.item import views
 
 urlpatterns = [
-    path('products/', views.ProductsAPI.as_view()),
-    path('product/<int:id>/', views.ProductAPI.as_view()),
+    path('products/', views.ProductAPI.as_view()),
+    path('product/<int:id>/', views.ProductDetailAPI.as_view()),
     path('admin/', admin.site.urls),
 ]

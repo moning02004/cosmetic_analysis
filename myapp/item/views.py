@@ -13,7 +13,7 @@ def index(request):
     return HttpResponse("HI")
 
 
-class ProductsAPI(APIView):
+class ProductAPI(APIView):
     __base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/thumbnail/"
 
     def get(self, request):
@@ -58,15 +58,43 @@ class ProductsAPI(APIView):
         return Response(response[start:end], status=status.HTTP_200_OK)
 
 
-class ProductAPI(APIView):
+class ProductDetailAPI(APIView):
     __base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/thumbnail/"
 
     def get(self, request, id):
         skin_type = request.GET.get('skin_type')
         assert skin_type
 
-        product = Product.objects.get(pk=id)
-        response = list()
-        category = Category.objects.get(pk=product.category)
+        product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
+        recommend = Product.objects.prefetch_related('ingredient').select_related('category').\
+            filter(category=product.category).order_by('price')
+        print(len(recommend))
+        response = [{
+            'id': product.pk,
+            'imgUrl': self.__base_url + product.image_id + '.jpg',
+            'name': product.name,
+            'price': product.price,
+            'gender': product.gender,
+            'category': product.category.name,
+            'ingredients': ','.join([x.name for x in product.ingredient.all()]),
+            'monthlySales': product.monthlySales
+        }]
 
-        return Response(status=status.HTTP_200_OK)
+        extract_prod = []
+        for product in recommend:
+            ingreds = product.ingredient.all()
+            score = 0
+            for x in list(ingreds.values_list(skin_type, flat=True)):
+                score += 1 if x == "O" else -1 if x == "X" else 0
+            extract_prod.append([score, product])
+
+        extract_prod = sorted(extract_prod, key=lambda x: (-x[0]))[:3]
+        for _, x in extract_prod:
+            response.append({
+                'score': _,
+                'id': x.pk,
+                'imgUrl': self.__base_url + x.image_id + '.jpg',
+                'name': x.name,
+                'price': x.price,
+            })
+        return Response(response, status=status.HTTP_200_OK)
