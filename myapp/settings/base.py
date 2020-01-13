@@ -28,12 +28,13 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-# django_rest_framework_class
+# django_rest_framework
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny'
     ]
 }
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Application definition
 INSTALLED_APPS = [
