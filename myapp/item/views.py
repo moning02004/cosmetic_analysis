@@ -42,7 +42,6 @@ class ProductAPI(APIView):
         response = list()
         for _, product in extract_prod:
             response.append({
-                'score': _,
                 'id': product.pk,
                 'imgUrl': self.__base_url + product.image_id + '.jpg',
                 'name': product.name,
@@ -88,7 +87,6 @@ class ProductDetailAPI(APIView):
         extract_prod = sorted(extract_prod, key=lambda x: (-x[0]))[:3]
         for _, x in extract_prod:
             response.append({
-                'score': _,
                 'id': x.pk,
                 'imgUrl': self.__base_url + x.image_id + '.jpg',
                 'name': x.name,
