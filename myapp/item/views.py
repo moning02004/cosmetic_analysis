@@ -1,3 +1,5 @@
+import time
+
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -22,22 +24,23 @@ class ProductAPI(APIView):
         category = request.GET.get('category')
         page = int(request.GET.get('page')) if request.GET.get('page') else None
 
+        # processing data
         include = [Ingredient.objects.get(name=x) for x in include.split(',')] if include else []
         exclude = [Ingredient.objects.get(name=x) for x in exclude.split(',')] if exclude else []
 
-        products = Product.objects.prefetch_related('ingredient').select_related('category').filter(category=category).order_by('price')\
-            if category else Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
-        extract_prod = []
+        products = Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
+        if category:
+            products = products.filter(category=category)
 
+        extract_prod = []
         for product in products:
-            ingreds = product.ingredient.all()
-            if set(ingreds) - set(exclude) == set(ingreds) and not len(set(include) - set(ingreds)):
+            ingredients = product.ingredient.all()
+            if set(ingredients) - set(exclude) == set(ingredients) and not len(set(include) - set(ingredients)):
                 score = 0
-                for x in list(ingreds.values_list(skin_type, flat=True)):
+                for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                     score += 1 if x == "O" else -1 if x == "X" else 0
                 extract_prod.append([score, product])
-
-        extract_prod = sorted(extract_prod, key=lambda x: (-x[0]))
+        extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
         response = list()
         for _, product in extract_prod:
@@ -49,9 +52,14 @@ class ProductAPI(APIView):
                 'ingredients': ','.join([x.name for x in product.ingredient.all()]),
                 'monthlySales': product.monthlySales
             })
-        start = page * 50 + 1 if page else 0
-        end = (page + 1) * 50 + 1 if page else len(response)
-        return Response(response[start:end], status=status.HTTP_200_OK)
+
+        if page is not None:
+            max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
+            if not 1 <= page <= max_page:
+                return Response(status.HTTP_400_BAD_REQUEST)
+            start, end = page * 50 + 1, (page + 1) * 50 + 1
+            return Response(response[start:end], status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class ProductDetailAPI(APIView):
@@ -62,9 +70,6 @@ class ProductDetailAPI(APIView):
         assert skin_type
 
         product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
-        recommend = Product.objects.prefetch_related('ingredient').select_related('category').\
-            filter(category=product.category).order_by('price')
-        print(len(recommend))
         response = [{
             'id': product.pk,
             'imgUrl': self.__base_url + product.image_id + '.jpg',
@@ -76,20 +81,23 @@ class ProductDetailAPI(APIView):
             'monthlySales': product.monthlySales
         }]
 
+        recommend = Product.objects.prefetch_related('ingredient').select_related('category'). \
+            filter(category=product.category).order_by('price')
+
         extract_prod = []
         for product in recommend:
-            ingreds = product.ingredient.all()
+            ingredients = product.ingredient.all()
             score = 0
-            for x in list(ingreds.values_list(skin_type, flat=True)):
+            for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                 score += 1 if x == "O" else -1 if x == "X" else 0
             extract_prod.append([score, product])
 
-        extract_prod = sorted(extract_prod, key=lambda x: (-x[0]))[:3]
-        for _, x in extract_prod:
+        extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)[:3]
+        for _, prod in extract_prod:
             response.append({
-                'id': x.pk,
-                'imgUrl': self.__base_url + x.image_id + '.jpg',
-                'name': x.name,
-                'price': x.price,
+                'id': prod.pk,
+                'imgUrl': self.__base_url + prod.image_id + '.jpg',
+                'name': prod.name,
+                'price': prod.price,
             })
         return Response(response, status=status.HTTP_200_OK)
