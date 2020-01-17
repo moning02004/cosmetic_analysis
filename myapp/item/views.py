@@ -5,7 +5,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Product, Category, Ingredient
+from .serializers import ProductsSerializer, ProductSerializer, ProductRecommendSerializer
+from .models import Product, Ingredient
 
 
 def index(request):
@@ -13,9 +14,9 @@ def index(request):
 
 
 class ProductAPI(APIView):
-    __base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/thumbnail/"
-
     def get(self, request):
+        starts = time.clock()
+
         skin_type = request.GET.get('skin_type')
         assert skin_type
         # get params
@@ -42,44 +43,28 @@ class ProductAPI(APIView):
                 extract_prod.append([score, product])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
-        response = list()
-        for _, product in extract_prod:
-            response.append({
-                'id': product.pk,
-                'imgUrl': self.__base_url + product.image_id + '.jpg',
-                'name': product.name,
-                'price': product.price,
-                'ingredients': ','.join([x.name for x in product.ingredient.all()]),
-                'monthlySales': product.monthlySales
-            })
+        response = [ProductsSerializer(product).data for _, product in extract_prod]
 
         if page is not None:
             max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
             if not 1 <= page <= max_page:
                 return Response(status.HTTP_400_BAD_REQUEST)
             start, end = page * 50 + 1, (page + 1) * 50 + 1
+            print(len(response), time.clock() - starts)
             return Response(response[start:end], status=status.HTTP_200_OK)
+        print(len(response), time.clock() - starts)
         return Response(response, status=status.HTTP_200_OK)
 
 
 class ProductDetailAPI(APIView):
-    __base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/thumbnail/"
-
     def get(self, request, id):
+        start = time.clock()
         skin_type = request.GET.get('skin_type')
         assert skin_type
 
         product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
-        response = [{
-            'id': product.pk,
-            'imgUrl': self.__base_url + product.image_id + '.jpg',
-            'name': product.name,
-            'price': product.price,
-            'gender': product.gender,
-            'category': product.category.name,
-            'ingredients': ','.join([x.name for x in product.ingredient.all()]),
-            'monthlySales': product.monthlySales
-        }]
+        response = list()
+        response.append(ProductSerializer(product).data)
 
         recommend = Product.objects.prefetch_related('ingredient').select_related('category'). \
             filter(category=product.category).order_by('price')
@@ -94,10 +79,6 @@ class ProductDetailAPI(APIView):
 
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)[:3]
         for _, prod in extract_prod:
-            response.append({
-                'id': prod.pk,
-                'imgUrl': self.__base_url + prod.image_id + '.jpg',
-                'name': prod.name,
-                'price': prod.price,
-            })
+            response.append(ProductRecommendSerializer(prod).data)
+        print(len(response), time.clock() - start)
         return Response(response, status=status.HTTP_200_OK)
