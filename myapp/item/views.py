@@ -15,8 +15,6 @@ def index(request):
 
 class ProductAPI(APIView):
     def get(self, request):
-        starts = time.clock()
-
         skin_type = request.GET.get('skin_type')
         assert skin_type
         # get params
@@ -50,22 +48,16 @@ class ProductAPI(APIView):
             if not 1 <= page <= max_page:
                 return Response(status.HTTP_400_BAD_REQUEST)
             start, end = page * 50 + 1, (page + 1) * 50 + 1
-            print(len(response), time.clock() - starts)
             return Response(response[start:end], status=status.HTTP_200_OK)
-        print(len(response), time.clock() - starts)
         return Response(response, status=status.HTTP_200_OK)
 
 
 class ProductDetailAPI(APIView):
     def get(self, request, id):
-        start = time.clock()
         skin_type = request.GET.get('skin_type')
         assert skin_type
 
         product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
-        response = list()
-        response.append(ProductSerializer(product).data)
-
         recommend = Product.objects.prefetch_related('ingredient').select_related('category'). \
             filter(category=product.category).order_by('price')
 
@@ -76,9 +68,10 @@ class ProductDetailAPI(APIView):
             for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                 score += 1 if x == "O" else -1 if x == "X" else 0
             extract_prod.append([score, product])
-
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)[:3]
-        for _, prod in extract_prod:
-            response.append(ProductRecommendSerializer(prod).data)
-        print(len(response), time.clock() - start)
+
+        response = list()
+        response.append(ProductSerializer(product).data)
+        response.append(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
+
         return Response(response, status=status.HTTP_200_OK)
