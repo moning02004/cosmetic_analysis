@@ -25,7 +25,7 @@ class ProductSerializer(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField('get_image')
 
     def get_image(self, obj):
-        base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/thumbnail/"
+        base_url = "https://grepp-programmers-challenges.s3.ap-northeast-2.amazonaws.com/2020-birdview/image/"
         return base_url + obj.image_id + '.jpg'
 
     def get_ingredients(self, obj):

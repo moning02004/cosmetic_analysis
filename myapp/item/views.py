@@ -32,13 +32,13 @@ class ProductAPI(APIView):
             products = products.filter(category=category)
 
         extract_prod = []
-        for product in products:
-            ingredients = product.ingredient.all()
+        for prod in products:
+            ingredients = prod.ingredient.all()
             if set(ingredients) - set(exclude) == set(ingredients) and not len(set(include) - set(ingredients)):
                 score = 0
                 for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                     score += 1 if x == "O" else -1 if x == "X" else 0
-                extract_prod.append([score, product])
+                extract_prod.append([score, prod])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
         response = [ProductsSerializer(product).data for _, product in extract_prod]
@@ -62,16 +62,15 @@ class ProductDetailAPI(APIView):
             filter(category=product.category).order_by('price')
 
         extract_prod = []
-        for product in recommend:
-            ingredients = product.ingredient.all()
+        for prod in recommend:
+            ingredients = prod.ingredient.all()
             score = 0
             for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                 score += 1 if x == "O" else -1 if x == "X" else 0
-            extract_prod.append([score, product])
+            extract_prod.append([score, prod])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)[:3]
 
         response = list()
         response.append(ProductSerializer(product).data)
         response.append(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
-
         return Response(response, status=status.HTTP_200_OK)
