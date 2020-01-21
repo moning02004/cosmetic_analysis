@@ -13,6 +13,10 @@ def index(request):
     return HttpResponse("HI")
 
 
+def is_exclude(ingredients, exclude):
+    return set(ingredients).union(set(exclude)) != set(ingredients) or not exclude
+
+
 class ProductAPI(APIView):
     def get(self, request):
         skin_type = request.GET.get('skin_type')
@@ -34,7 +38,7 @@ class ProductAPI(APIView):
         extract_prod = []
         for prod in products:
             ingredients = prod.ingredient.all()
-            if set(ingredients) - set(exclude) == set(ingredients) and not len(set(include) - set(ingredients)):
+            if is_exclude(ingredients, exclude) and not set(include) - set(ingredients):
                 score = 0
                 for x in [getattr(ingred, skin_type) for ingred in ingredients]:
                     score += 1 if x == "O" else -1 if x == "X" else 0
@@ -42,7 +46,7 @@ class ProductAPI(APIView):
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
         response = [ProductsSerializer(product).data for _, product in extract_prod]
-
+        print(len(response))
         if page is not None:
             max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
             if not 1 <= page <= max_page:
