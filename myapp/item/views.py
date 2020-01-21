@@ -46,7 +46,7 @@ class ProductAPI(APIView):
             max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
             if not 1 <= page <= max_page:
                 return Response(status.HTTP_400_BAD_REQUEST)
-            start, end = page * 50 + 1, (page + 1) * 50 + 1
+            start, end = (page-1) * 50 + 1, page * 50 + 1
             return Response(response[start:end], status=status.HTTP_200_OK)
         return Response(response, status=status.HTTP_200_OK)
 
