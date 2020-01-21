@@ -33,6 +33,13 @@ class TestCase1(ProductsTestCase):
         res = [x.get('id') for x in response.json()]
         self.assertEqual(res, [8, 4, 7, 10])
 
+    def test_parameter_exclude_two(self):
+        client = Client()
+        params = {'skin_type': 'dry', 'exclude_ingredient': 'dry1,dry2'} # dry1, dry2 exclude prod : 2 3 4 7 8 9 10
+        response = client.get('/products/', params)
+        res = [x.get('id') for x in response.json()]
+        self.assertEqual(res, [3, 2, 8, 4, 9, 7, 10])
+
     def test_parameter_include(self):
         client = Client()
         params = {'skin_type': 'oily', 'include_ingredient': 'dry2'} # dry2 prod : 1 5 6 8

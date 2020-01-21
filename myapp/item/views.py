@@ -13,10 +13,6 @@ def index(request):
     return HttpResponse("HI")
 
 
-def is_exclude(ingredients, exclude):
-    return set(ingredients).union(set(exclude)) != set(ingredients) or not exclude
-
-
 class ProductAPI(APIView):
     def get(self, request):
         skin_type = request.GET.get('skin_type')
@@ -46,7 +42,6 @@ class ProductAPI(APIView):
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
         response = [ProductsSerializer(product).data for _, product in extract_prod]
-        print(len(response))
         if page is not None:
             max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
             if not 1 <= page <= max_page:
@@ -81,3 +76,9 @@ class ProductDetailAPI(APIView):
         response.append(ProductSerializer(product).data)
         response.extend(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
         return Response(response, status=status.HTTP_200_OK)
+
+
+# set은 중복을 제거하기 때문에 합집합 했을 때, 원래의 집합과 같다면 exclude를 모두 포함한다는 의미이다.
+# exclude가 []라면 parameter로 주어지지 않았음을 의미하기 때문에 이 경우는 제외한다.
+def is_exclude(ingredients, exclude):
+    return set(ingredients).union(set(exclude)) != set(ingredients) or not exclude
