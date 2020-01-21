@@ -57,6 +57,9 @@ class ProductDetailAPI(APIView):
         skin_type = request.GET.get('skin_type')
         assert skin_type
 
+        # 상품 소개와는 상관없이 추천 상품에도 해당 상품도 표시한다.
+        # 추천하는 최상위 상품이 소개된 상품보다 더 좋은지 안 좋은지 알 수 없기 때문이다.
+        # 가격이나 성분만으로 소비자는 구분하기 어렵다.
         product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
         recommend = Product.objects.prefetch_related('ingredient').select_related('category'). \
             filter(category=product.category).order_by('price')
@@ -72,5 +75,5 @@ class ProductDetailAPI(APIView):
 
         response = list()
         response.append(ProductSerializer(product).data)
-        response.append(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
+        response.extend(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
         return Response(response, status=status.HTTP_200_OK)
