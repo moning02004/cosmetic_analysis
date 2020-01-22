@@ -60,3 +60,26 @@ class TestCase1(ProductsTestCase):
         response = client.get('/products/', params)
         res = [x.get('id') for x in response.json()]
         self.assertEqual(res, [7, 8, 10, 9, 6])
+
+    def test_parameter_cat_inc_exc(self):
+        client = Client()
+        params = {
+            'skin_type': 'sensitive',
+            'category': 'basemakeup',
+            'include_ingredient': 'dry1,dry3',
+            'exclude_ingredient': 'dry2'
+        }  # prod : 2 3
+        response = client.get('/products/', params)
+        res = [x.get('id') for x in response.json()]
+        self.assertEqual(res, [3, 2])
+
+    def test_parameter_intersection(self):
+        client = Client()
+        params = {
+            'skin_type': 'sensitive',
+            'category': 'basemakeup',
+            'include_ingredient': 'dry1,dry3',
+            'exclude_ingredient': 'dry2,dry3'
+        }  # prod : 2 3
+        response = client.get('/products/', params)
+        self.assertEqual(response.status_code, 400)
