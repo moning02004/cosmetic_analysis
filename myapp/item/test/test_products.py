@@ -82,4 +82,17 @@ class TestCase1(ProductsTestCase):
             'exclude_ingredient': 'dry2,dry3'
         }  # prod : 2 3
         response = client.get('/products/', params)
+        print('error : ', response.json()['error'])
+        self.assertEqual(response.status_code, 400)
+
+    def test_parameter_page(self):
+        client = Client()
+        params = {
+            'skin_type': 'sensitive',
+            'category': 'basemakeup',
+            'include_ingredient': 'dry1,dry3',
+            'page': '2'
+        }  # prod : 2 3
+        response = client.get('/products/', params)
+        print('error : ', response.json()['error'])
         self.assertEqual(response.status_code, 400)

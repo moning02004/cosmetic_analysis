@@ -27,7 +27,7 @@ class ProductAPI(APIView):
         include = [Ingredient.objects.get(name=x) for x in include.split(',')] if include else []
         exclude = [Ingredient.objects.get(name=x) for x in exclude.split(',')] if exclude else []
         if set(include).intersection(set(exclude)):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'The intersection between include and exclude must be None.'}, status=status.HTTP_400_BAD_REQUEST)
 
         products = Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
         if category:
@@ -45,7 +45,7 @@ class ProductAPI(APIView):
         if page is not None:
             max_page = math.ceil(len(response) / 50)
             if not 1 <= page <= max_page:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': "page is invalid (max : " + str(max_page) + ")"}, status=status.HTTP_400_BAD_REQUEST)
             start, end = (page-1) * 50, page * 50 + 1
             return Response(response[start:end], status=status.HTTP_200_OK)
         return Response(response, status=status.HTTP_200_OK)
