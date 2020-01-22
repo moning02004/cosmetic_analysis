@@ -1,4 +1,4 @@
-import time
+import math
 
 from django.http import HttpResponse
 from rest_framework import status
@@ -34,41 +34,37 @@ class ProductAPI(APIView):
         extract_prod = []
         for prod in products:
             ingredients = prod.ingredient.all()
-            if is_exclude(ingredients, exclude) and not set(include) - set(ingredients):
-                score = 0
-                for x in [getattr(ingred, skin_type) for ingred in ingredients]:
-                    score += 1 if x == "O" else -1 if x == "X" else 0
+            if (set(ingredients).union(set(exclude)) != set(ingredients) or not exclude) and not set(include) - set(ingredients):
+                score = prod.calc_score(skin_type)
                 extract_prod.append([score, prod])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
 
         response = [ProductsSerializer(product).data for _, product in extract_prod]
         if page is not None:
-            max_page = len(response) // 50 if not len(response) % 50 else len(response) // 50 + 1
+            max_page = math.ceil(len(response) / 50)
             if not 1 <= page <= max_page:
                 return Response(status.HTTP_400_BAD_REQUEST)
-            start, end = (page-1) * 50 + 1, page * 50 + 1
+            start, end = (page-1) * 50, page * 50 + 1
             return Response(response[start:end], status=status.HTTP_200_OK)
         return Response(response, status=status.HTTP_200_OK)
 
 
 class ProductDetailAPI(APIView):
+
+    # 상품 소개와는 상관없이 추천 상품에도 해당 상품도 표시한다.
+    # 추천하는 최상위 상품이 소개된 상품보다 더 좋은지 안 좋은지 알 수 없기 때문이다.
+    # 가격이나 성분만으로 소비자는 구분하기 어렵다.
     def get(self, request, id):
         skin_type = request.GET.get('skin_type')
         assert skin_type
 
-        # 상품 소개와는 상관없이 추천 상품에도 해당 상품도 표시한다.
-        # 추천하는 최상위 상품이 소개된 상품보다 더 좋은지 안 좋은지 알 수 없기 때문이다.
-        # 가격이나 성분만으로 소비자는 구분하기 어렵다.
         product = Product.objects.prefetch_related('ingredient').select_related('category').get(pk=id)
         recommend = Product.objects.prefetch_related('ingredient').select_related('category'). \
             filter(category=product.category).order_by('price')
 
         extract_prod = []
         for prod in recommend:
-            ingredients = prod.ingredient.all()
-            score = 0
-            for x in [getattr(ingred, skin_type) for ingred in ingredients]:
-                score += 1 if x == "O" else -1 if x == "X" else 0
+            score = prod.calc_score(skin_type)
             extract_prod.append([score, prod])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)[:3]
 
@@ -76,9 +72,3 @@ class ProductDetailAPI(APIView):
         response.append(ProductSerializer(product).data)
         response.extend(ProductRecommendSerializer(prod).data for _, prod in extract_prod)
         return Response(response, status=status.HTTP_200_OK)
-
-
-# set은 중복을 제거하기 때문에 합집합 했을 때, 원래의 집합과 같다면 exclude를 모두 포함한다는 의미이다.
-# exclude가 []라면 parameter로 주어지지 않았음을 의미하기 때문에 이 경우는 제외한다.
-def is_exclude(ingredients, exclude):
-    return set(ingredients).union(set(exclude)) != set(ingredients) or not exclude

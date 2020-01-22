@@ -30,6 +30,12 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    def calc_score(self, skin_type):
+        score = 0
+        for x in [getattr(ingred, skin_type) for ingred in self.ingredient.all()]:
+            score += 1 if x == "O" else -1 if x == "X" else 0
+        return score
+
 
 class Constitute(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -37,3 +43,4 @@ class Constitute(models.Model):
 
     def __str__(self):
         return self.product.name + "__" + self.ingredient.name
+
