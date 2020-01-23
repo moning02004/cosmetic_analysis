@@ -36,6 +36,12 @@ class Product(models.Model):
             score += 1 if x == "O" else -1 if x == "X" else 0
         return score
 
+    def is_exclude(self, exclude):
+        return set(self.ingredient.all()).union(set(exclude)) != set(self.ingredient.all()) or not exclude
+
+    def is_include(self, include):
+        return not set(include) - set(self.ingredient.all())
+
 
 class Constitute(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

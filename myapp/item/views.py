@@ -36,7 +36,7 @@ class ProductAPI(APIView):
         extract_prod = []
         for prod in products:
             ingredients = prod.ingredient.all()
-            if (set(ingredients).union(set(exclude)) != set(ingredients) or not exclude) and not set(include) - set(ingredients):
+            if prod.is_exclude(exclude) and prod.is_include(include):
                 score = prod.calc_score(skin_type)
                 extract_prod.append([score, prod])
         extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
@@ -46,7 +46,7 @@ class ProductAPI(APIView):
             max_page = math.ceil(len(response) / 50)
             if not 1 <= page <= max_page:
                 return Response({'error': "page is invalid (max : " + str(max_page) + ")"}, status=status.HTTP_400_BAD_REQUEST)
-            start, end = (page-1) * 50, page * 50 + 1
+            start, end = (page-1) * 50, page * 50
             return Response(response[start:end], status=status.HTTP_200_OK)
         return Response(response, status=status.HTTP_200_OK)
 
