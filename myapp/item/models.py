@@ -37,10 +37,10 @@ class Product(models.Model):
         return score
 
     def is_exclude(self, exclude):
-        return set(self.ingredient.all()).union(set(exclude)) != set(self.ingredient.all()) or not exclude
+        return set(self.ingredient.all()).union(exclude) != set(self.ingredient.all()) or not exclude
 
     def is_include(self, include):
-        return not set(include) - set(self.ingredient.all())
+        return not include - set(self.ingredient.all())
 
 
 class Constitute(models.Model):

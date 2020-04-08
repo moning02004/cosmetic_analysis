@@ -27,14 +27,16 @@ class ProductAPI(ListAPIView):
 
         category = params.get('category')
         include = params.get('include_ingredient')
-        exclude = params.get('include_ingredient')
+        exclude = params.get('exclude_ingredient')
 
         product_list = Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
         if category:
             product_list = product_list.filter(category=category)
 
-        include = [Ingredient.objects.get(name=x) for x in include.split(',')] if include else []
-        exclude = [Ingredient.objects.get(name=x) for x in exclude.split(',')] if exclude else []
+        include = set([Ingredient.objects.get(name=x) for x in include.split(',')] if include else [])
+        exclude = set([Ingredient.objects.get(name=x) for x in exclude.split(',')] if exclude else [])
+        if include.intersection(exclude):
+            return None
 
         product_list = [[product.calc_score(params.get('skin_type')), product] \
                         for product in product_list if product.is_exclude(exclude) and product.is_include(include)]
@@ -42,7 +44,8 @@ class ProductAPI(ListAPIView):
         return product_list
 
     def get(self, request, *args, **kwargs):
-        if 'skin_type' not in request.query_params.keys():
+        params = request.query_params
+        if 'skin_type' not in params.keys():
             return Response({'detail': "'skin_type' is required"}, status=status.HTTP_400_BAD_REQUEST)
         return super().get(request)
 

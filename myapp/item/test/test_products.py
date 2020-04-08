@@ -82,8 +82,8 @@ class TestCase1(ProductsTestCase):
             'exclude_ingredient': 'dry2,dry3'
         }  # prod : 2 3
         response = client.get('/products/', params)
-        print('error : ', response.json()['error'])
-        self.assertEqual(response.status_code, 400)
+        res = [x.get('id') for x in response.json()]
+        self.assertEqual(res, [])
 
     def test_parameter_page(self):
         client = Client()
@@ -94,5 +94,4 @@ class TestCase1(ProductsTestCase):
             'page': '2'
         }  # prod : 2 3
         response = client.get('/products/', params)
-        print('error : ', response.json()['error'])
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
