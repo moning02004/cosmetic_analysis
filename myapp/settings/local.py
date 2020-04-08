@@ -10,7 +10,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'HOST': '127.0.0.1',
         'NAME': 'my_database',
-        'USER': 'root',
-        'PASSWORD': 'password',
+        'USER': 'user1',
+        'PASSWORD': '1q2w3e4r',
     }
 }

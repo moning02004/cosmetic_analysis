@@ -1,54 +1,50 @@
-import math
+import time
 
 from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView, get_object_or_404
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import ProductsSerializer, ProductSerializer, ProductRecommendSerializer
 from .models import Product, Ingredient
+from .serializers import ProductsSerializer, ProductSerializer, ProductRecommendSerializer
+from ..pagination import OnlyBodyPagination
 
 
 def index(request):
     return HttpResponse("HI")
 
 
-class ProductAPI(APIView):
-    def get(self, request):
-        skin_type = request.GET.get('skin_type')
-        assert skin_type
-        # get params
-        include = request.GET.get('include_ingredient')
-        exclude = request.GET.get('exclude_ingredient')
-        category = request.GET.get('category')
-        page = int(request.GET.get('page')) if request.GET.get('page') else None
+class ProductAPI(ListAPIView):
+    serializer_class = ProductsSerializer
+    pagination_class = OnlyBodyPagination
 
-        # processing data
+    def get_queryset(self):
+        params = self.request.query_params
+        self.pagination_class = None if not params.get('page') else self.pagination_class
+
+        category = params.get('category')
+        include = params.get('include_ingredient')
+        exclude = params.get('include_ingredient')
+
+        product_list = Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
+        if category:
+            product_list = product_list.filter(category=category)
+
         include = [Ingredient.objects.get(name=x) for x in include.split(',')] if include else []
         exclude = [Ingredient.objects.get(name=x) for x in exclude.split(',')] if exclude else []
-        if set(include).intersection(set(exclude)):
-            return Response({'error': 'The intersection between include and exclude must be None.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        products = Product.objects.prefetch_related('ingredient').select_related('category').all().order_by('price')
-        if category:
-            products = products.filter(category=category)
+        product_list = [[product.calc_score(params.get('skin_type')), product] \
+                        for product in product_list if product.is_exclude(exclude) and product.is_include(include)]
+        product_list = [product for _, product in sorted(product_list, key=lambda x: -x[0])]
+        return product_list
 
-        extract_prod = []
-        for prod in products:
-            ingredients = prod.ingredient.all()
-            if prod.is_exclude(exclude) and prod.is_include(include):
-                score = prod.calc_score(skin_type)
-                extract_prod.append([score, prod])
-        extract_prod = sorted(extract_prod, key=lambda x: x[0], reverse=True)
-
-        response = [ProductsSerializer(product).data for _, product in extract_prod]
-        if page is not None:
-            max_page = math.ceil(len(response) / 50)
-            if not 1 <= page <= max_page:
-                return Response({'error': "page is invalid (max : " + str(max_page) + ")"}, status=status.HTTP_400_BAD_REQUEST)
-            start, end = (page-1) * 50, page * 50
-            return Response(response[start:end], status=status.HTTP_200_OK)
-        return Response(response, status=status.HTTP_200_OK)
+    def get(self, request, *args, **kwargs):
+        if 'skin_type' not in request.query_params.keys():
+            return Response({'detail': "'skin_type' is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return super().get(request)
 
 
 class ProductDetailAPI(APIView):

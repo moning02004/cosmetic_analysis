@@ -16,7 +16,7 @@ class ProductsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'imgUrl', 'name', 'price', 'ingredients', 'monthlySales']
+        fields = ['id', 'imgUrl', 'name', 'price', 'ingredients', 'monthly_sales']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -36,7 +36,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'imgUrl', 'name', 'price', 'gender', 'category', 'ingredients', 'monthlySales']
+        fields = ['id', 'imgUrl', 'name', 'price', 'gender', 'category', 'ingredients', 'monthly_sales']
 
 
 class ProductRecommendSerializer(serializers.ModelSerializer):

@@ -23,7 +23,7 @@ class Product(models.Model):
     name = models.CharField(max_length=150)
     price = models.IntegerField()
     gender = models.CharField(max_length=6)
-    monthlySales = models.IntegerField()
+    monthly_sales = models.IntegerField()
     image_id = models.CharField(max_length=50)
     ingredient = models.ManyToManyField(Ingredient, through='Constitute', through_fields=('product', 'ingredient'))
 
@@ -49,4 +49,3 @@ class Constitute(models.Model):
 
     def __str__(self):
         return self.product.name + "__" + self.ingredient.name
-
